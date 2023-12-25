@@ -58,7 +58,7 @@ mvnbart <- function(x_train,
      Sigma_init <- NULL # The initial value for the \Sigma matrix initialisation
      update_Sigma <- TRUE # It always TRUE was only useful to test exeperiments
      conditional_bool <- TRUE # Again is always true
-     tn_sampler <- TRUE # Define if the truncated-normal sampler gonna be used or not
+     tn_sampler <- FALSE # Define if the truncated-normal sampler gonna be used or not
 
      # Verifying if it's been using a y_mat matrix
      if(NCOL(y_mat)<2){

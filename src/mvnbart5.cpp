@@ -1569,8 +1569,8 @@ double truncated_sample(double mu, bool left, double sigma_) {
                 iteration_counter++;
 
                 if(iteration_counter>1e6){
-                        arma:: cout << "Mean value: " << mu << endl;
-                        arma:: cout << "Sigma value: " << sigma_ << endl;
+                        arma::cout << "Mean value: " << mu << endl;
+                        arma::cout << "Sigma value: " << sigma_ << endl;
 
                         throw std::range_error("many iterations for the the truncated-sampler");
                 }

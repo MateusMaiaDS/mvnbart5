@@ -1082,6 +1082,7 @@ void updateMuPredictions(Node* tree, modelParam &data,
                 bool update_train_ = true;
                 bool update_test_ = true;
                 int for_size_;
+
                 // Setting the size of the for
                 if(data.x_train.n_rows > data.x_test.n_rows){
                         for_size_ = data.x_train.n_rows;
@@ -1099,6 +1100,11 @@ void updateMuPredictions(Node* tree, modelParam &data,
 
                         if(update_train_){
                                 current_prediction_train[t_nodes[i]->train_index[ii]] = t_nodes[i] -> mu;
+                        }
+
+
+                        if(t_nodes[i]->n_leaf_test == 0 ){
+                                continue;
                         }
 
                         // Updating for the test samples

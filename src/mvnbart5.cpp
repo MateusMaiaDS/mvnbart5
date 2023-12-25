@@ -1,4 +1,4 @@
-#include "mvnbart4.h"
+#include "mvnbart5.h"
 #include <iomanip>
 #include<cmath>
 #include <random>
@@ -468,12 +468,6 @@ Forest::Forest(modelParam& data){
         }
 }
 
-// Function to delete one tree
-// Forest::~Forest(){
-//         for(int  i=0;i<trees.size();i++){
-//                 delete trees[i];
-//         }
-// }
 
 // Selecting a random node
 Node* sample_node(std::vector<Node*> leaves_){
@@ -1069,6 +1063,61 @@ void Node::nodeLogLike(modelParam& data){
 }
 
 
+//Updating Mu and Predictions at the same time
+void updateMuPredictions(Node* tree, modelParam &data,
+                         arma::vec &current_prediction_train,
+                         arma::vec &current_prediction_test){
+
+        // Getting the terminal nodes
+        std::vector<Node*> t_nodes = leaves(tree);
+
+
+        // Iterating over the terminal nodes and updating the beta values
+        for(int i = 0; i < t_nodes.size();i++){
+
+                // Updating mu
+                t_nodes[i]->mu = R::rnorm((t_nodes[i]->S_j)/(t_nodes[i]->Gamma_j),sqrt(data.v_j/(t_nodes[i]->Gamma_j))) ;
+
+                // Create a boolean to update the train
+                bool update_train_ = true;
+                bool update_test_ = true;
+                int for_size_;
+                // Setting the size of the for
+                if(data.x_train.n_rows > data.x_test.n_rows){
+                        for_size_ = data.x_train.n_rows;
+                } else {
+                        for_size_ = data.x_test.n_rows;
+                }
+
+                // Iterating over the training.rows
+                for(int ii = 0; ii < for_size_ ; ii++){
+
+                        // Updating for the training samples
+                        if(t_nodes[i]->train_index[ii] == -1){
+                                update_train_ = false;
+                        }
+
+                        if(update_train_){
+                                current_prediction_train[t_nodes[i]->train_index[ii]] = t_nodes[i] -> mu;
+                        }
+
+                        // Updating for the test samples
+                        if(t_nodes[i]->test_index[ii] == -1){
+                                update_test_ = false;
+                        }
+
+                        if(update_test_){
+                                current_prediction_test[t_nodes[i]->test_index[ii]] = t_nodes[i] -> mu;
+                        }
+
+                        // Getting out of the for if necessary
+                        if(!(update_train_) & !(update_test_)){
+                                break; // Get out from the for
+                        }
+                }
+        }
+}
+
 // UPDATING MU
 void updateMu(Node* tree, modelParam &data, arma::vec &curr_r, arma::vec &curr_u){
 
@@ -1106,7 +1155,6 @@ void updateSigma(arma::mat &y_mat_hat,
 
 
 // Get the prediction
-// (MOST IMPORTANT AND COSTFUL FUNCTION FROM GP-BART)
 void getPredictions(Node* tree,
                     modelParam &data,
                     arma::vec& current_prediction_train,
@@ -1338,10 +1386,11 @@ Rcpp::List cppbart(arma::mat x_train,
 
                         // Calculating the invertion that gonna be used for the U and V
                         arma::mat Sigma_mj_mj_inv = arma::inv(Sigma_mj_mj);
+                        arma::mat Sigma_calculation_aux = (Sigma_mj_j.t()*Sigma_mj_mj_inv); // This line calculate a quantitiy that is constant for the i_train so avoids multiple calculations;
 
                                 // Calculating the current partial U
                                 for(int i_train = 0; i_train < data.y_mat.n_rows;i_train++){
-                                                partial_u(i_train) = arma::as_scalar((Sigma_mj_j.t()*Sigma_mj_mj_inv)*(y_mj.row(i_train)-y_hat_mj.row(i_train)).t()); // Old version
+                                                partial_u(i_train) = arma::as_scalar(Sigma_calculation_aux*(y_mj.row(i_train)-y_hat_mj.row(i_train)).t()); // Old version
 
                                 }
 
@@ -1391,12 +1440,8 @@ Rcpp::List cppbart(arma::mat x_train,
                                 }
 
 
-                                // Updating Mu variable
-                                updateMu(all_forest.trees[curr_tree_counter],data,partial_residuals,partial_u);
-
-                                // Getting predictions
-                                // cout << " Error on Get Predictions" << endl;
-                                getPredictions(all_forest.trees[curr_tree_counter],data,y_j_hat,y_j_test_hat);
+                                // Updating Mu and Prediction
+                                updateMuPredictions(all_forest.trees[curr_tree_counter],data,y_j_hat,y_j_test_hat);
 
                                 // Updating the tree
                                 // cout << "Residuals error 2.0"<< endl;

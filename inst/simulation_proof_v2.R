@@ -1,6 +1,7 @@
 # install.packages("devtools")
 # devtools::install_github("MateusMaiaDS/mvnbart4")
 devtools::load_all()
+set.seed(42)
 # test for continuous outcomes
 
 # Generating a new simulated dataset from different Friedman scenario

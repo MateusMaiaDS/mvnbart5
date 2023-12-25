@@ -1,8 +1,3 @@
-# Creating the D (difference matrix)
-D_gen <- function(p, n_dif){
-        return(diff(diag(p),diff = n_dif))
-}
-
 # A fucction to retrive the number which are the factor columns
 base_dummyVars <- function(df) {
         num_cols <- sapply(df, is.numeric)

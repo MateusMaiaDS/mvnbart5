@@ -21,15 +21,15 @@ log_dmvn <- function(x, Sigma) {
     .Call('_mvnbart5_log_dmvn', PACKAGE = 'mvnbart5', x, Sigma)
 }
 
-cppbart <- function(x_train, y_mat, x_test, x_cut, n_tree, node_min_size, n_mcmc, n_burn, Sigma_init, mu_init, sigma_mu, alpha, beta, nu, S_0_wish, A_j_vec, update_Sigma, var_selection_bool) {
-    .Call('_mvnbart5_cppbart', PACKAGE = 'mvnbart5', x_train, y_mat, x_test, x_cut, n_tree, node_min_size, n_mcmc, n_burn, Sigma_init, mu_init, sigma_mu, alpha, beta, nu, S_0_wish, A_j_vec, update_Sigma, var_selection_bool)
+cppbart <- function(x_train, y_mat, x_test, x_cut, n_tree, node_min_size, n_mcmc, n_burn, Sigma_init, mu_init, sigma_mu, alpha, beta, nu, S_0_wish, A_j_vec, update_Sigma, var_selection_bool, sv_bool, sv_matrix) {
+    .Call('_mvnbart5_cppbart', PACKAGE = 'mvnbart5', x_train, y_mat, x_test, x_cut, n_tree, node_min_size, n_mcmc, n_burn, Sigma_init, mu_init, sigma_mu, alpha, beta, nu, S_0_wish, A_j_vec, update_Sigma, var_selection_bool, sv_bool, sv_matrix)
 }
 
 truncated_sample <- function(mu, left, sigma_) {
     .Call('_mvnbart5_truncated_sample', PACKAGE = 'mvnbart5', mu, left, sigma_)
 }
 
-cppbart_CLASS <- function(x_train, y_mat, x_test, x_cut, n_tree, node_min_size, n_mcmc, n_burn, Sigma_init, mu_init, sigma_mu, nu, alpha, beta, m, update_sigma, var_selection_bool, tn_sampler) {
-    .Call('_mvnbart5_cppbart_CLASS', PACKAGE = 'mvnbart5', x_train, y_mat, x_test, x_cut, n_tree, node_min_size, n_mcmc, n_burn, Sigma_init, mu_init, sigma_mu, nu, alpha, beta, m, update_sigma, var_selection_bool, tn_sampler)
+cppbart_CLASS <- function(x_train, y_mat, x_test, x_cut, n_tree, node_min_size, n_mcmc, n_burn, Sigma_init, mu_init, sigma_mu, nu, alpha, beta, m, update_sigma, var_selection_bool, tn_sampler, sv_bool, sv_matrix) {
+    .Call('_mvnbart5_cppbart_CLASS', PACKAGE = 'mvnbart5', x_train, y_mat, x_test, x_cut, n_tree, node_min_size, n_mcmc, n_burn, Sigma_init, mu_init, sigma_mu, nu, alpha, beta, m, update_sigma, var_selection_bool, tn_sampler, sv_bool, sv_matrix)
 }
 

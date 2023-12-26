@@ -1,5 +1,6 @@
 # install.packages("devtools")
 # devtools::install_github("MateusMaiaDS/mvnbart4")
+rm(list=ls())
 devtools::load_all()
 set.seed(42)
 # test for continuous outcomes
@@ -8,7 +9,7 @@ set.seed(42)
 # ====
 p <- 10
 n <- 250
-mvn_dim <- 3
+mvn_dim <- 2
 if(mvn_dim==3){
      sigma1 <- 1
      sigma2 <- 2.5
@@ -26,7 +27,7 @@ if(mvn_dim==3){
      sigma1 <- 1
      sigma2 <- 10
      rho12 <- 0.75
-     Sigma <- diag(c(sigma1^2,sigma^2),nrow = mvn_dim)
+     Sigma <- diag(c(sigma1^2,sigma2^2),nrow = mvn_dim)
      Sigma[1,2] <- Sigma[2,1] <-sigma1*sigma2*rho12
      determinant(Sigma)$modulus[1]
      eigen(Sigma)$values
@@ -83,13 +84,13 @@ df_x_new <- as.data.frame(sim_new$x)
 mod <- mvnbart(x_train = df_x,
                 y_mat = df_y,
                 x_test = df_x_new,
-                varimportance = TRUE,
+                varimportance = TRUE,specify_variables = list(c(1,2,3), c(1,4)),
                 df = 10,n_tree = 100)
 
 
 # Visualzing the variable importance
 par(mfrow=c(1,3))
-for( y_j_plot in 1:3){
+for( y_j_plot in 1:mvn_dim){
      total_count <- apply(mod$var_importance[,,y_j_plot],2,sum)
      norm_count <- total_count/sum(total_count)
      names(norm_count) <- paste0("x.",1:ncol(df_x))
@@ -100,12 +101,12 @@ for( y_j_plot in 1:3){
 # Diagonistics of the prediction over the test set
 par(mfrow = c(2,3))
 
-for( y_j_plot in 1:3){
+for( y_j_plot in 1:mvn_dim){
      plot(sim_data$y_true[,y_j_plot],mod$y_hat_mean[,y_j_plot], pch = 20, main = paste0("y.",y_j_plot, " train pred"),
           xlab = "y.true.train" , ylab = "y.hat.train", col = ggplot2::alpha("black",0.2))
      abline(a = 0,b = 1,col = "blue", lty = 'dashed', lwd = 1.5)
 }
-for( y_j_plot in 1:3){
+for( y_j_plot in 1:mvn_dim){
      plot(sim_new$y_true[,y_j_plot],mod$y_hat_test_mean[,y_j_plot], pch = 20, main = paste0("y.",y_j_plot, " test pred"),
           xlab = "y.true.test" , ylab = "y.hat.test", col = ggplot2::alpha("black",0.2))
      abline(a = 0,b = 1,col = "blue", lty = 'dashed', lwd = 1.5)

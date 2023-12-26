@@ -24,7 +24,9 @@ node_min_size <- 5
 Sigma_init <- NULL
 scale_y <- TRUE
 update_Sigma <- TRUE
-var_selection_bool <- TRUE
+varimportance <- TRUE
+specify_variables <- list(c(1,2,3),
+                          c(1,4))
 x_train <- df_x
 y_mat <- df_y
 x_test <- df_x_new

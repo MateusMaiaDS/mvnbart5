@@ -212,7 +212,9 @@ modelParam::modelParam(arma::mat x_train_,
                         arma::mat S_0_wish_,
                         arma::vec A_j_vec_,
                         double n_mcmc_,
-                        double n_burn_){
+                        double n_burn_,
+                        bool sv_bool_,
+                        arma:: mat sv_matrix_){
 
 
         // Assign the variables
@@ -233,6 +235,9 @@ modelParam::modelParam(arma::mat x_train_,
         a_j_vec = arma::vec(y_mat_.n_cols,arma::fill::zeros);
         n_mcmc = n_mcmc_;
         n_burn = n_burn_;
+
+        sv_bool = sv_bool_;
+        sv_matrix = sv_matrix_;
 
         // Generating the elements for the correlation matrix
         R = Sigma_;
@@ -484,7 +489,7 @@ Node* sample_node(std::vector<Node*> leaves_){
 }
 
 // Grow a tree for a given rule
-void grow(Node* tree, modelParam &data, arma::vec &curr_res, arma::vec& curr_u){
+void grow(Node* tree, modelParam &data, arma::vec &curr_res, arma::vec& curr_u, int y_j_){
 
         // Getting the number of terminal nodes
         std::vector<Node*> t_nodes = leaves(tree) ;
@@ -512,9 +517,27 @@ void grow(Node* tree, modelParam &data, arma::vec &curr_res, arma::vec& curr_u){
 
         bool no_valid_node = false;
         int p_try = 0;
+        // arma::cout << "variable (j): " << y_j_ << endl;
+        int sum_vars = arma::sum(data.sv_matrix.row(y_j_));
+        arma::vec split_candidates;
 
         // Trying to find a cutpoint
-        arma::vec split_candidates = arma::shuffle(arma::regspace(0,1,data.x_train.n_cols-1));
+        if(data.sv_bool){
+                arma::vec split_candidates_aux(sum_vars);
+                int index_aux_ = 0;
+                for(int ii_ = 0; ii_ < data.sv_matrix.n_cols; ii_++) {
+                        if(data.sv_matrix(y_j_,ii_)==1){
+                                split_candidates_aux(index_aux_) = ii_;
+                                index_aux_++;
+                        }
+                }
+                split_candidates = arma::shuffle(split_candidates_aux);
+
+        } else {
+                arma::vec split_candidates_aux = arma::shuffle(arma::regspace(0,1,data.x_train.n_cols-1));
+                split_candidates = split_candidates_aux;
+        }
+
         Rcpp::NumericVector valid_cutpoint;
 
         while(!no_valid_node){
@@ -539,9 +562,16 @@ void grow(Node* tree, modelParam &data, arma::vec &curr_res, arma::vec& curr_u){
 
                 if(valid_cutpoint.size()==0){
                         p_try++;
-                        if(p_try>=data.x_train.n_cols){
-                                no_valid_node = true;
-                        };
+                        if(data.sv_bool){
+                                if(p_try>=sum_vars){
+                                        no_valid_node = true;
+                                }
+                        } else {
+                                if(p_try>=data.x_train.n_cols){
+                                        no_valid_node = true;
+                                };
+                        }
+
                 } else {
                         break; // Go out from the while
                 }
@@ -742,7 +772,7 @@ void prune(Node* tree, modelParam&data, arma::vec &curr_res, arma::vec &curr_u){
 
 
 // // Creating the change verb
-void change(Node* tree, modelParam &data, arma::vec &curr_res, arma::vec &curr_u){
+void change(Node* tree, modelParam &data, arma::vec &curr_res, arma::vec &curr_u, int y_j_){
 
 
         // Getting the number of terminal nodes
@@ -817,8 +847,28 @@ void change(Node* tree, modelParam &data, arma::vec &curr_res, arma::vec &curr_u
         bool no_valid_node = false;
         int p_try = 0;
 
+        int sum_vars = arma::sum(data.sv_matrix.row(y_j_));
+        arma::vec split_candidates;
+
         // Trying to find a cutpoint
-        arma::vec split_candidates = arma::shuffle(arma::regspace(0,1,data.x_train.n_cols-1));
+        if(data.sv_bool){
+                arma::vec split_candidates_aux(sum_vars);
+                int index_aux_ = 0;
+                for(int ii_ = 0; ii_ < data.sv_matrix.n_cols; ii_++) {
+                        if(data.sv_matrix(y_j_,ii_)==1){
+                                split_candidates_aux(index_aux_) = ii_;
+                                index_aux_++;
+                        }
+                }
+                split_candidates = arma::shuffle(split_candidates_aux);
+
+        } else {
+                arma::vec split_candidates_aux = arma::shuffle(arma::regspace(0,1,data.x_train.n_cols-1));
+                split_candidates = split_candidates_aux;
+        }
+
+        // cout << " Split candidates: " << split_candidates << endl;
+        // Trying to find a cutpoint
         Rcpp::NumericVector valid_cutpoint;
 
         while(!no_valid_node){
@@ -843,9 +893,15 @@ void change(Node* tree, modelParam &data, arma::vec &curr_res, arma::vec &curr_u
 
                 if(valid_cutpoint.size()==0){
                         p_try++;
-                        if(p_try>=data.x_train.n_cols){
-                                no_valid_node = true;
-                        };
+                        if(data.sv_bool){
+                                if(p_try>=sum_vars){
+                                        no_valid_node = true;
+                                }
+                        } else {
+                                if(p_try>=data.x_train.n_cols){
+                                        no_valid_node = true;
+                                };
+                        }
                 } else {
                         break; // Go out from the while
                 }
@@ -1244,7 +1300,9 @@ Rcpp::List cppbart(arma::mat x_train,
           arma::mat S_0_wish,
           arma::vec A_j_vec,
           bool update_Sigma,
-          bool var_selection_bool){
+          bool var_selection_bool,
+          bool sv_bool,
+          arma::mat sv_matrix){
 
         // Posterior counter
         int curr = 0;
@@ -1266,7 +1324,9 @@ Rcpp::List cppbart(arma::mat x_train,
                         S_0_wish,
                         A_j_vec,
                         n_mcmc,
-                        n_burn);
+                        n_burn,
+                        sv_bool,
+                        sv_matrix);
 
         // Getting the n_post
         int n_post = n_mcmc - n_burn;
@@ -1436,13 +1496,13 @@ Rcpp::List cppbart(arma::mat x_train,
                                 // Selecting the verb
                                 if(verb < 0.25){
                                         data.move_proposal(0)++;
-                                        grow(all_forest.trees[curr_tree_counter],data,partial_residuals,partial_u);
+                                        grow(all_forest.trees[curr_tree_counter],data,partial_residuals,partial_u,j);
                                 } else if(verb>=0.25 & verb <0.5) {
                                         data.move_proposal(1)++;
                                         prune(all_forest.trees[curr_tree_counter], data, partial_residuals,partial_u);
                                 } else {
                                         data.move_proposal(2)++;
-                                        change(all_forest.trees[curr_tree_counter], data, partial_residuals,partial_u);
+                                        change(all_forest.trees[curr_tree_counter], data, partial_residuals,partial_u,j);
                                 }
 
 
@@ -1704,7 +1764,9 @@ Rcpp::List cppbart_CLASS(arma::mat x_train,
                    unsigned int m,
                    bool update_sigma,
                    bool var_selection_bool,
-                   bool tn_sampler){
+                   bool tn_sampler,
+                   bool sv_bool,
+                   arma::mat sv_matrix){
 
         // Posterior counter
         int curr = 0;
@@ -1728,7 +1790,9 @@ Rcpp::List cppbart_CLASS(arma::mat x_train,
                         S_0_wish,
                         A_j_vec,
                         n_mcmc,
-                        n_burn);
+                        n_burn,
+                        sv_bool,
+                        sv_matrix);
 
         // Getting the n_post
         int n_post = n_mcmc - n_burn;
@@ -1912,13 +1976,13 @@ Rcpp::List cppbart_CLASS(arma::mat x_train,
                                         data.move_proposal(0)++;
                                         // cout << " Grow error" << endl;
                                         // Rcpp::stop("STOP ENTERED INTO A GROW");
-                                        grow(all_forest.trees[curr_tree_counter],data,partial_residuals,partial_u);
+                                        grow(all_forest.trees[curr_tree_counter],data,partial_residuals,partial_u,j);
                                 } else if(verb>=0.25 & verb <0.5) {
                                         data.move_proposal(1)++;
                                         prune(all_forest.trees[curr_tree_counter], data, partial_residuals,partial_u);
                                 } else {
                                         data.move_proposal(2)++;
-                                        change(all_forest.trees[curr_tree_counter], data, partial_residuals,partial_u);
+                                        change(all_forest.trees[curr_tree_counter], data, partial_residuals,partial_u,j);
                                 }
 
 

@@ -26,6 +26,10 @@ struct modelParam {
         arma::mat R;
         arma::mat D;
 
+        // Specific variables for each tree
+        bool sv_bool;
+        arma::mat sv_matrix;
+
         double nu;
         int node_min_size;
 
@@ -56,7 +60,9 @@ struct modelParam {
                    arma::mat S_0_wish_,
                    arma::vec A_j_vec_,
                    double n_mcmc_,
-                   double n_burn_);
+                   double n_burn_,
+                   bool sv_bool_,
+                   arma::mat sv_matrix_);
 
 };
 

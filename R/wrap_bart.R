@@ -32,7 +32,7 @@
 #' @param usequants Boolean; if true the quantiles are going to be used to define the grid of cutpoints.
 #' @param m Hyperparameter used in the definition of the prior setting of the correlation matrix for the Probit-Multivariate approach.
 #' @param varimportance Boolean; if true returns a matrix with \code{n_mcmc} rows and \eqn{d} columns corresponding to the total sum of number of times that a variable \eqn{j} was used among all trees of a MCMC iteration.
-#'
+#' @param specify_variables a list of numeric vectors where each respective element contains the indexes of the covariates allowed to be selected for the set of trees for the respective respose \eqn{Y_{j}}. The default is \code{NULL} and allow to all covariates from \eqn{X} to be selected for all trees.
 #' @export
 mvnbart <- function(x_train,
                   y_mat,
@@ -49,7 +49,8 @@ mvnbart <- function(x_train,
                   numcut = 100L, # Defining the grid of split rules
                   usequants = FALSE,
                   m = 20, # Degrees of freed for the classification setting.
-                  varimportance = TRUE
+                  varimportance = TRUE,
+                  specify_variables = NULL # Specify variables for each dimension (j) by name or index for.
                   ) {
 
 
@@ -60,6 +61,20 @@ mvnbart <- function(x_train,
      conditional_bool <- TRUE # Again is always true
      tn_sampler <- FALSE # Define if the truncated-normal sampler gonna be used or not
 
+     if(!is.null(specify_variables) & (length(specify_variables)!=NCOL(y_mat))){
+             stop("Specify a proper list for the variables to be used in the tree.")
+     }
+
+     if(is.null(specify_variables)){
+             sv_bool <- FALSE # boolean to be used in the C++ code
+             sv_matrix <- matrix(1,nrow = NCOL(y_mat),ncol = NCOL(x_train))
+     } else {
+             sv_bool <- TRUE
+             sv_matrix <- matrix(0,nrow = NCOL(y_mat),ncol = NCOL(x_train))
+             for(i in 1:NCOL(y_mat)){
+                     sv_matrix[i,specify_variables[[i]]] <- 1
+             }
+     }
      # Verifying if it's been using a y_mat matrix
      if(NCOL(y_mat)<2){
          stop("Insert a valid multivariate response. ")
@@ -252,7 +267,9 @@ mvnbart <- function(x_train,
                                  alpha,beta,
                                  m,update_Sigma,
                                  varimportance,
-                                 tn_sampler)
+                                 tn_sampler,
+                                 sv_bool,
+                                 sv_matrix)
      } else {
                 bart_obj <- cppbart(x_train_scale,
                                   y_mat_scale,
@@ -269,7 +286,9 @@ mvnbart <- function(x_train,
                                   S_0_wish,
                                   A_j,
                                   update_Sigma,
-                                  varimportance)
+                                  varimportance,
+                                  sv_bool,
+                                  sv_matrix)
      }
 
 

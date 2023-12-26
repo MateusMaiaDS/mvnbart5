@@ -1,13 +1,13 @@
 # install.packages("devtools")
 # devtools::install_github("MateusMaiaDS/mvnbart4")
-devtools::load_all()
+# devtools::load_all()
 set.seed(42)
 # test for continuous outcomes
 
 # Generating a new simulated dataset from different Friedman scenario
 # ====
 p <- 10
-n <- 250
+n <- 1000
 mvn_dim <- 3
 if(mvn_dim==3){
      sigma1 <- 1
@@ -80,5 +80,61 @@ df_x_new <- as.data.frame(sim_new$x)
 
 
 # Getting two differente packages
-mod_comparison <- microbenchmark::microbenchmark(mvnbart4_mod <- mvnbart4::mvnbart4(x_train = df_x,y_mat = df_y,x_test = df_x_new),
+mod_comparison <- microbenchmark::microbenchmark(mvnbart4_mod <- mvnbart4::mvnbart(x_train = df_x,y_mat = df_y,x_test = df_x_new),
                                    mvnbart5_mod <- mvnbart5::mvnbart(x_train = df_x,y_mat = df_y,x_test = df_x_new),times = 1)
+
+mod <- mvnbart5_mod
+
+# Visualzing the variable importance
+par(mfrow=c(1,3))
+for( y_j_plot in 1:3){
+        total_count <- apply(mod$var_importance[,,y_j_plot],2,sum)
+        norm_count <- total_count/sum(total_count)
+        names(norm_count) <- paste0("x.",1:ncol(df_x))
+        sort <- sort(norm_count,decreasing = TRUE)
+        barplot(sort,main = paste0("Var importance for y.",y_j_plot),las = 2)
+}
+
+# Diagonistics of the prediction over the test set
+par(mfrow = c(2,3))
+
+for( y_j_plot in 1:3){
+        plot(sim_data$y_true[,y_j_plot],mod$y_hat_mean[,y_j_plot], pch = 20, main = paste0("y.",y_j_plot, " train pred"),
+             xlab = "y.true.train" , ylab = "y.hat.train", col = ggplot2::alpha("black",0.2))
+        abline(a = 0,b = 1,col = "blue", lty = 'dashed', lwd = 1.5)
+}
+for( y_j_plot in 1:3){
+        plot(sim_new$y_true[,y_j_plot],mod$y_hat_test_mean[,y_j_plot], pch = 20, main = paste0("y.",y_j_plot, " test pred"),
+             xlab = "y.true.test" , ylab = "y.hat.test", col = ggplot2::alpha("black",0.2))
+        abline(a = 0,b = 1,col = "blue", lty = 'dashed', lwd = 1.5)
+}
+
+
+
+# For the 2-dvariate case
+if(mvn_dim == 2) {
+        par(mfrow=c(1,3))
+        plot(sqrt(mod$Sigma_post[1,1,]), main = expression(sigma[1]), type = 'l', ylab = expression(sigma[1]),xlab = "MCMC iter")
+        abline(h = sqrt(Sigma[1,1]), lty = 'dashed', col = 'blue')
+        plot(sqrt(mod$Sigma_post[2,2,]), main = expression(sigma[2]), type = 'l', ylab = expression(sigma[2]),xlab = "MCMC iter")
+        abline(h = sqrt(Sigma[2,2]), lty = 'dashed', col = 'blue')
+        plot(mod$Sigma_post[1,2,]/(sqrt(mod$Sigma_post[1,1,])*sqrt(mod$Sigma_post[2,2,])), main = expression(rho), type = 'l', ylab = expression(rho),xlab = "MCMC iter")
+        abline(h = rho12, lty = 'dashed', col = 'blue')
+} else if(mvn_dim ==3 ){
+        par(mfrow=c(2,3))
+        plot(sqrt(mod$Sigma_post[1,1,]), main = expression(sigma[1]), type = 'l', ylab = expression(sigma[1]),xlab = "MCMC iter")
+        abline(h = sqrt(Sigma[1,1]), lty = 'dashed', col = 'blue')
+        plot(sqrt(mod$Sigma_post[2,2,]), main = expression(sigma[2]), type = 'l', ylab = expression(sigma[2]),xlab = "MCMC iter")
+        abline(h = sqrt(Sigma[2,2]), lty = 'dashed', col = 'blue')
+        plot(sqrt(mod$Sigma_post[3,3,]), main = expression(sigma[3]), type = 'l', ylab = expression(sigma[3]),xlab = "MCMC iter")
+        abline(h = sqrt(Sigma[3,3]), lty = 'dashed', col = 'blue')
+
+        plot(mod$Sigma_post[1,2,]/(sqrt(mod$Sigma_post[1,1,])*sqrt(mod$Sigma_post[2,2,])), main = expression(rho[12]), type = 'l', ylab = expression(rho[12]),xlab = "MCMC iter")
+        abline(h = Sigma[1,2]/(sqrt(Sigma[1,1])*sqrt(Sigma[2,2])), lty = 'dashed', col = 'blue')
+        plot(mod$Sigma_post[1,3,]/(sqrt(mod$Sigma_post[1,1,])*sqrt(mod$Sigma_post[3,3,])), main = expression(rho[13]), type = 'l', ylab = expression(rho[13]),xlab = "MCMC iter")
+        abline(h = Sigma[1,3]/(sqrt(Sigma[1,1])*sqrt(Sigma[3,3])), lty = 'dashed', col = 'blue')
+        plot(mod$Sigma_post[2,3,]/(sqrt(mod$Sigma_post[3,3,])*sqrt(mod$Sigma_post[2,2,])), type = 'l', ylab = expression(rho[23]),xlab = "MCMC iter")
+        abline(h = Sigma[2,3]/(sqrt(Sigma[2,2])*sqrt(Sigma[3,3])), lty = 'dashed', col = 'blue')
+
+}
+

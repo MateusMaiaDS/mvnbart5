@@ -34,9 +34,17 @@ if(mvn_dim==3){
 
 }
 
-sim_mvn_friedman1 <- function(n, p, mvn_dim,Sigma,seed = NULL){
+sim_mvn_friedman1 <- function(n, p, mvn_dim,Sigma){
 
-     # Setting the seed
+
+     # Verifying if it is a valid Sigma.
+     if(NROW(Sigma)!=mvn_dim | NCOL(Sigma)!=mvn_dim){
+             stop(paste0("Insert a valid Sigma matrix for the ",mvn_dim,"-d case."))
+     }
+     # Verifying if is semi-positive-define
+     if(!all(eigen(Sigma)$values>0)){
+        stop("Insert a positive-semidefined matrix")
+     }
 
      # Generate the x matrix
      x <- matrix(runif(p*n), ncol = p)
